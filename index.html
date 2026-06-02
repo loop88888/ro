@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>카츄아의 열쇠 시뮬레이터</title>
+
+<style>
+
+body{
+    background:#111;
+    color:#ddd;
+    font-family:sans-serif;
+    margin:0;
+    padding:12px;
+    font-size:14px;
+}
+
+h1{
+    margin:0 0 10px 0;
+    color:#ffd700;
+    font-size:24px;
+}
+
+.controls{
+    margin-bottom:10px;
+}
+
+button{
+    background:#333;
+    color:white;
+    border:none;
+    border-radius:4px;
+    padding:6px 10px;
+    margin:2px;
+    cursor:pointer;
+    font-size:13px;
+}
+
+button:hover{
+    background:#555;
+}
+
+.stats{
+    margin-bottom:10px;
+    color:#999;
+}
+
+#log{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:2px 12px;
+    line-height:1.1;
+}
+
+.item{
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+.count{
+    color:#888;
+    font-size:12px;
+}
+
+/* 0.01% 이하 */
+.ultra{
+    color:#ff3355;
+    font-weight:bold;
+    text-shadow:
+        0 0 6px #ff3355,
+        0 0 12px #ff3355;
+}
+
+/* 0.1% 미만 */
+.legend{
+    color:#ffd700;
+    font-weight:bold;
+    text-shadow:
+        0 0 4px #ffd700;
+}
+
+/* 1% 미만 */
+.rare{
+    color:#66bbff;
+}
+
+.common{
+    color:#ddd;
+}
+
+@media(max-width:1000px){
+    #log{
+        grid-template-columns:repeat(3,1fr);
+    }
+}
+
+@media(max-width:700px){
+    #log{
+        grid-template-columns:repeat(2,1fr);
+    }
+}
+
+@media(max-width:500px){
+    #log{
+        grid-template-columns:repeat(1,1fr);
+    }
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>카츄아의 열쇠 시뮬레이터</h1>
+
+<div class="controls">
+    <button onclick="draw(1)">1회</button>
+    <button onclick="draw(10)">10회</button>
+    <button onclick="draw(100)">100회</button>
+    <button onclick="draw(1000)">1000회</button>
+    <button onclick="resetAll()">초기화</button>
+</div>
+
+<div class="stats">
+    총 뽑기 :
+    <span id="totalDraw">0</span>
+</div>
+
+<div id="log"></div>
+
+<script>
+
+const items = [
+
+{name:"[카츄아]마일리지 쿠폰", rate:100.0000},
+
+{name:"실릿 퐁 상자", rate:0.0100},
+
+{name:"고급 제련 보장권 봉투", rate:0.0500},
+{name:"머메이드 헤드폰(글로벌 쿨타임)", rate:0.0500},
+{name:"머메이드 헤드폰(변동 캐스팅)", rate:0.0500},
+{name:"머메이드 헤드폰(MAXHP)", rate:0.0500},
+
+{name:"에메랄드 로즈(명중)", rate:0.0300},
+{name:"에메랄드 로즈(치명)", rate:0.0300},
+{name:"에메랄드 로즈(마법)", rate:0.0300},
+{name:"에메랄드 로즈(체력)", rate:0.0300},
+
+{name:"바이올렛 스타더스트 크라운", rate:0.0500},
+{name:"대학자의 머플러", rate:0.0500},
+{name:"마도사의 망토", rate:0.0500},
+{name:"대학자의 슈즈", rate:0.0500},
+{name:"마도사의 슈즈", rate:0.0500},
+
+{name:"[A] 광휘의 룬 서클릿(아크 메이지)", rate:0.0300},
+{name:"[A] 광휘의 룬 서클릿(어비스 체이서)", rate:0.0300},
+{name:"[A] 광휘의 룬 서클릿(하이퍼 노비스)", rate:0.0300},
+{name:"[A] 광휘의 지팡이", rate:0.0300},
+{name:"[A] 광휘의 석궁", rate:0.0300},
+{name:"[A] 광휘의 검", rate:0.0300},
+
+{name:"인챈트 티켓 x3", rate:0.0900},
+{name:"강력한 영혼의 정수", rate:0.0900},
+{name:"강력한 차원의 정수", rate:0.0900},
+{name:"봉인된 보스 카드첩", rate:0.0900},
+
+{name:"영혼의 뚫어뻥", rate:0.2000},
+
+{name:"장교의 모자-LT", rate:0.1000},
+{name:"EXP 어드바이저", rate:0.1000},
+{name:"미니 선풍기 상자", rate:0.1000},
+
+{name:"[C] 광휘의 룬 서클릿(아크 메이지)", rate:0.1000},
+{name:"[C] 광휘의 룬 서클릿(어비스 체이서)", rate:0.1000},
+{name:"[C] 광휘의 룬 서클릿(하이퍼 노비스)", rate:0.1000},
+{name:"[C] 광휘의 지팡이", rate:0.1000},
+{name:"[C] 광휘의 석궁", rate:0.1000},
+{name:"[C] 광휘의 검", rate:0.1000},
+
+{name:"포이즈닝 워터 웨폰 쉐도우", rate:0.1500},
+{name:"포이즈닝 워터 쉴드 쉐도우", rate:0.1500},
+{name:"매직 포이즈닝 워터 웨폰 쉐도우", rate:0.1500},
+{name:"매직 포이즈닝 워터 쉴드 쉐도우", rate:0.1500},
+
+{name:"광휘의 무기 제련망치", rate:0.3000},
+{name:"광휘의 서클릿 제련망치", rate:0.3000},
+
+{name:"[C] 천공의 룬 크라운(엘레멘탈 마스터)", rate:0.1000},
+{name:"[C] 천공의 룬 크라운(어비스 체이서)", rate:0.1000},
+{name:"[C] 천공의 룬 크라운(나이트 워치)", rate:0.1000},
+{name:"[C] 천공의 엘레멘탈 북", rate:0.1000},
+{name:"[C] 천공의 체이싱 대거", rate:0.1000},
+{name:"[C] 천공의 나이트 샷", rate:0.1000},
+
+{name:"천공의 무기 제련망치", rate:0.3000},
+{name:"천공의 크라운 제련망치", rate:0.3000},
+
+{name:"데프트 브레이커 이어링 쉐도우", rate:0.2000},
+{name:"데프트 브레이커 펜던트 쉐도우", rate:0.2000},
+{name:"프렌지 리액션 샷 아머 쉐도우", rate:0.2000},
+{name:"프렌지 리액션 샷 슈즈 쉐도우", rate:0.2000},
+
+{name:"어비스 플레임 이어링 쉐도우", rate:0.2000},
+{name:"어비스 플레임 펜던트 쉐도우", rate:0.2000},
+{name:"프롬 어비스 아머 쉐도우", rate:0.2000},
+{name:"프롬 어비스 슈즈 쉐도우", rate:0.2000},
+
+{name:"플레어 블룸 이어링 쉐도우", rate:0.2000},
+{name:"플레어 블룸 펜던트 쉐도우", rate:0.2000},
+{name:"스톰 허리케인 아머 쉐도우", rate:0.2000},
+{name:"스톰 허리케인 슈즈 쉐도우", rate:0.2000},
+
+{name:"크리스탈 일루전 이어링 쉐도우", rate:0.2000},
+{name:"크리스탈 일루전 펜던트 쉐도우", rate:0.2000},
+{name:"바일런트 소울 트래머 아머 쉐도우", rate:0.2000},
+{name:"바일런트 소울 트래머 슈즈 쉐도우", rate:0.2000},
+
+{name:"발칸 잭 이어링 쉐도우", rate:0.2000},
+{name:"발칸 잭 펜던트 쉐도우", rate:0.2000},
+{name:"선더 버스터 아머 쉐도우", rate:0.2000},
+{name:"선더 버스터 슈즈 쉐도우", rate:0.2000},
+
+{name:"맥스 체인 이어링 쉐도우", rate:0.2000},
+{name:"맥스 체인 펜던트 쉐도우", rate:0.2000},
+{name:"더블 블로우 아머 쉐도우", rate:0.2000},
+{name:"더블 블로우 슈즈 쉐도우", rate:0.2000},
+
+{name:"마스터 웨폰 쉐도우", rate:0.2000},
+{name:"마스터 쉴드 쉐도우", rate:0.2000},
+
+{name:"대장장이의 축복 3개 상자", rate:0.3000},
+{name:"홀그렌의 쉐도우 제련망치 3개 상자", rate:0.3000},
+{name:"쉐도우 에센스 3개 상자", rate:0.3000},
+{name:"무한 거대한 파리의 날개 1시간 상자", rate:0.3000},
+{name:"인챈트 티켓", rate:0.3000},
+
+{name:"제련 보장권 봉투", rate:0.8000},
+
+{name:"M.아머 쉐도우 상자", rate:1.0000},
+{name:"M.슈즈 쉐도우 상자", rate:1.0000},
+{name:"M.펜던트 쉐도우 상자", rate:1.0000},
+{name:"M.이어링 쉐도우 상자", rate:1.0000},
+
+{name:"특별한 쉐도우 마법서 상자", rate:4.4700},
+{name:"대장장이의 축복", rate:4.4700},
+{name:"쉐도우 에센스", rate:4.4700},
+{name:"홀그렌의 쉐도우 제련망치", rate:4.4700},
+
+{name:"올 쉐도우 큐브", rate:3.0000},
+{name:"쉐도우 마법서 선택상자", rate:3.0000},
+
+{name:"스테이터스 감소 포션 선택 상자", rate:5.0000},
+{name:"바이올로 선택 상자", rate:5.0000},
+{name:"마이스터 선택 상자", rate:5.0000},
+{name:"독약병 상자", rate:5.0000},
+{name:"무한 고양이손 티켓 7일상자", rate:5.0000},
+{name:"알케미스트 선택 상자", rate:5.0000},
+{name:"신비한 메달 저금통", rate:5.0000},
+{name:"오염된 마력 x2", rate:5.0000},
+{name:"무한 파리의 날개 5일상자", rate:5.0000},
+{name:"골든 다이아몬드 상자", rate:5.0000},
+{name:"황금 x3", rate:5.0000},
+{name:"월드 이동권 x5", rate:5.0000}
+
+];
+
+const totalRate =
+items.reduce((a,b)=>a+b.rate,0);
+
+const inventory = {};
+
+let totalDraw = 0;
+
+function getRandomItem(){
+
+    let rand = Math.random() * totalRate;
+
+    let sum = 0;
+
+    for(const item of items){
+
+        sum += item.rate;
+
+        if(rand <= sum){
+            return item;
+        }
+    }
+
+    return items[0];
+}
+
+function getClass(rate){
+
+    if(rate <= 0.01) return "ultra";
+    if(rate < 0.1) return "legend";
+    if(rate < 1) return "rare";
+
+    return "common";
+}
+
+function draw(times){
+
+    for(let i=0;i<times;i++){
+
+        const item = getRandomItem();
+
+        totalDraw++;
+
+        if(!inventory[item.name]){
+
+            inventory[item.name] = {
+                count:0,
+                rate:item.rate
+            };
+        }
+
+        inventory[item.name].count++;
+    }
+
+    render();
+}
+
+function render(){
+
+    const log = document.getElementById("log");
+
+    log.innerHTML = "";
+
+    const sorted =
+    Object.entries(inventory)
+    .sort((a,b)=>{
+
+        if(a[1].rate === b[1].rate){
+            return b[1].count - a[1].count;
+        }
+
+        return a[1].rate - b[1].rate;
+    });
+
+    for(const [name,data] of sorted){
+
+        const div = document.createElement("div");
+
+        div.className =
+        `item ${getClass(data.rate)}`;
+
+        div.innerHTML =
+        `${name} <span class="count">x${data.count}</span>`;
+
+        log.appendChild(div);
+    }
+
+    document.getElementById("totalDraw").textContent =
+    totalDraw.toLocaleString();
+}
+
+function resetAll(){
+
+    totalDraw = 0;
+
+    for(const key in inventory){
+        delete inventory[key];
+    }
+
+    render();
+}
+
+</script>
+
+</body>
+</html>
