@@ -1,418 +1,648 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>카츄아의 열쇠 시뮬레이터</title>
-
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>라그나로크 카츄아 뽑기 시뮬레이터 & 실전 기록기</title>
 <style>
+*{box-sizing:border-box}
+body{margin:0;background:#f4f5f7;color:#202124;font-family:system-ui,-apple-system,"Segoe UI","Noto Sans KR",sans-serif}
+.wrap{max-width:1300px;margin:15px auto;padding:12px}
+.card{background:#fff;border:1px solid #e2e5e9;border-radius:12px;padding:16px;box-shadow:0 4px 14px rgba(0,0,0,.04);margin-bottom:12px}
+h1{margin:0 0 10px;font-size:20px}
+h2{margin:0 0 8px;font-size:16px}
 
-body{
-    background:#111;
-    color:#ddd;
-    font-family:sans-serif;
-    margin:0;
-    padding:12px;
-    font-size:14px;
-}
+textarea{width:100%;min-height:90px;padding:10px;border:1px solid #cfd4da;border-radius:8px;font:12px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;resize:vertical}
+button{padding:7px 12px;border:0;border-radius:6px;background:#222;color:#fff;font-size:12px;font-weight:700;cursor:pointer;transition:all 0.2s}
+button:hover{opacity:0.9}
+.btnrow{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.secondary{background:#eef0f2;color:#222}
+.primary-blue{background:#0066ff;color:#fff}
+.primary-green{background:#087f3f;color:#fff}
+.danger{background:#ff4d4f;color:#fff}
 
-h1{
-    margin:0 0 10px 0;
-    color:#ffd700;
-    font-size:24px;
-}
+/* 요약 헤더 */
+.header-summary{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-top:10px;padding-bottom:8px;border-bottom:2px solid #edf0f2}
+.total-val-box{background:#f8fafc;padding:6px 12px;border-radius:8px;border:1px solid #e2e8f0;text-align:right}
+.total-val-main{font-size:15px;font-weight:800;color:#087f3f}
+.total-val-sub{font-size:11px;color:#64748b;margin-top:2px}
 
-.controls{
-    margin-bottom:10px;
-}
+/* 5분할 그리드 */
+.grid-container{display:grid;grid-template-columns:repeat(5, 1fr);gap:6px;margin-top:10px;max-height:55vh;overflow-y:auto;padding-right:2px}
 
-button{
-    background:#333;
-    color:white;
-    border:none;
-    border-radius:4px;
-    padding:6px 10px;
-    margin:2px;
-    cursor:pointer;
-    font-size:13px;
-}
+/* 밀집형 카드 (시뮬레이터용) */
+.item-card{border:1px solid #e5e7eb;border-radius:6px;padding:6px 8px;background:#fff;display:flex;flex-direction:column;justify-content:space-between;min-height:62px}
 
-button:hover{
-    background:#555;
-}
+/* 희귀도 색상 */
+.rate-ur{background:#fff5f5;border-color:#ffc9c9}
+.rate-ur .item-name{color:#d91e1e;font-weight:bold}
+.rate-ur .badge{background:#d91e1e;color:#fff}
 
-.stats{
-    margin-bottom:10px;
-    color:#999;
-}
+.rate-r{background:#fffdf0;border-color:#fef08a}
+.rate-r .item-name{color:#b7791f;font-weight:bold}
+.rate-r .badge{background:#d69e2e;color:#fff}
 
-#log{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:2px 12px;
-    line-height:1.1;
-}
+.rate-uc{background:#f0f7ff;border-color:#bae0ff}
+.rate-uc .item-name{color:#0958d9}
+.rate-uc .badge{background:#1677ff;color:#fff}
 
-.item{
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-}
+.rate-c{background:#fafafa;border-color:#e8e8e8}
+.rate-c .item-name{color:#434343}
+.rate-c .badge{background:#8c8c8c;color:#fff}
 
-.count{
-    color:#888;
-    font-size:12px;
-}
+.item-top{display:flex;justify-content:space-between;align-items:flex-start;gap:4px}
+.item-name{font-size:11px;line-height:1.2;word-break:keep-all}
+.badge{font-size:9px;padding:1px 4px;border-radius:3px;white-space:nowrap;font-weight:bold}
+.item-bottom{margin-top:4px;display:flex;justify-content:space-between;align-items:flex-end}
+.item-price-info{font-size:10px;color:#6b7280;line-height:1.1}
+.item-qty{font-size:12px;font-weight:800;color:#111827}
 
-/* 0.01% 이하 */
-.ultra{
-    color:#ff3355;
-    font-weight:bold;
-    text-shadow:
-        0 0 6px #ff3355,
-        0 0 12px #ff3355;
-}
+/* 실제 뽑기 목록 스타일 */
+.search-input{padding:6px 10px;border:1px solid #cfd4da;border-radius:6px;font-size:12px;width:200px}
+.real-list-container{display:grid;grid-template-columns:repeat(3, 1fr);gap:6px;margin-top:10px;max-height:400px;overflow-y:auto;padding-right:2px}
+.real-item-row{border:1px solid #e5e7eb;border-radius:6px;padding:6px 8px;background:#fff;display:flex;align-items:center;justify-content:space-between;gap:6px}
+.real-item-info{display:flex;flex-direction:column;flex:1;min-width:0}
+.real-item-name{font-size:11px;font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.real-item-price{font-size:10px;color:#6b7280}
 
-/* 0.1% 미만 */
-.legend{
-    color:#ffd700;
-    font-weight:bold;
-    text-shadow:
-        0 0 4px #ffd700;
-}
+.qty-control{display:flex;align-items:center;gap:3px;flex-shrink:0}
+.btn-qty{width:22px;height:22px;padding:0;font-size:12px;line-height:1;border-radius:4px;background:#eef0f2;color:#222;display:inline-flex;align-items:center;justify-content:center}
+.btn-qty:hover{background:#0066ff;color:#fff}
+.input-qty{width:36px;height:22px;text-align:center;font-size:11px;border:1px solid #cfd4da;border-radius:4px;padding:0}
 
-/* 1% 미만 */
-.rare{
-    color:#66bbff;
+@media(max-width:1100px){
+  .grid-container{grid-template-columns:repeat(4, 1fr);}
+  .real-list-container{grid-template-columns:repeat(2, 1fr);}
 }
-
-.common{
-    color:#ddd;
+@media(max-width:850px){
+  .grid-container{grid-template-columns:repeat(3, 1fr);}
+  .real-list-container{grid-template-columns:repeat(1, 1fr);}
 }
-@media(max-width:1000px){
-    #log{
-        grid-template-columns:repeat(3,1fr);
-    }
+@media(max-width:600px){
+  .grid-container{grid-template-columns:repeat(2, 1fr);}
 }
-
-@media(max-width:700px){
-    #log{
-        grid-template-columns:repeat(2,1fr);
-    }
-}
-
-@media(max-width:500px){
-    #log{
-        grid-template-columns:repeat(1,1fr);
-    }
-}
-
 </style>
 </head>
-
 <body>
+<div class="wrap">
+  <!-- 1. 시뮬레이터 카드 -->
+  <div class="card">
+    <h1>🎰 카츄아 뽑기 시뮬레이터</h1>
+    
+    <div class="btnrow">
+      <button id="sim1" class="secondary">1회</button>
+      <button id="sim10" class="secondary">10회</button>
+      <button id="sim50" class="secondary">50회</button>
+      <button id="sim100" class="secondary">100회</button>
+      <button id="sim1000" class="primary-blue">1,000회</button>
+      <button id="resetSim" class="danger" style="margin-left:auto;">🔄 뽑기 초기화</button>
+    </div>
 
-<h1>카츄아의 열쇠 시뮬레이터</h1>
+    <div class="header-summary">
+      <div style="font-weight:bold; font-size:14px;">
+        📦 획득 목록 <span style="font-size:12px; color:#6b7280; font-weight:normal;">(누적: <b id="totalSimCount" style="color:#0066ff;">0</b>회)</span>
+      </div>
+      <div class="total-val-box">
+        <div class="total-val-main">총 금액: <span id="totalPulledValue">0 Zeny</span></div>
+        <div class="total-val-sub" id="expectedValCompare">기대값: 0 Z</div>
+      </div>
+    </div>
 
-<div class="controls">
-    <button onclick="draw(1)">1회</button>
-    <button onclick="draw(10)">10회</button>
-    <button onclick="draw(100)">100회</button>
-    <button onclick="draw(1000)">1000회</button>
-    <button onclick="resetAll()">초기화</button>
+    <div id="gridContainer" class="grid-container"></div>
+  </div>
+
+  <!-- 2. 실제 뽑기 결과 직접 입력 카드 -->
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+      <h2>📝 실제 뽑기 결과 입력</h2>
+      <input type="text" id="realSearch" class="search-input" placeholder="🔍 아이템 이름 검색...">
+    </div>
+
+    <div class="header-summary">
+      <div style="font-weight:bold; font-size:14px;">
+        🎮 실전 획득 내역 <span style="font-size:12px; color:#6b7280; font-weight:normal;">(총 <b id="realTotalCount" style="color:#0066ff;">0</b>개 수량)</span>
+      </div>
+      <div class="total-val-box">
+        <div class="total-val-main">총 금액: <span id="realTotalValue">0 Zeny</span></div>
+        <div class="total-val-sub" id="realExpectedCompare">기대값: 0 Z</div>
+      </div>
+    </div>
+
+    <div class="btnrow" style="margin-top:8px;">
+      <button id="resetRealBtn" class="danger" style="margin-left:auto;">🗑️ 수량 전체 초기화</button>
+    </div>
+
+    <div id="realListContainer" class="real-list-container"></div>
+  </div>
+
+  <!-- 3. 시세 입력 카드 -->
+  <div class="card">
+    <h2>📋 최저가 데이터 붙여넣기</h2>
+    <textarea id="priceInput" placeholder="여기에 최저가가 포함된 텍스트를 붙여넣으세요..."></textarea>
+    
+    <div class="btnrow" style="margin-top:8px;">
+      <button id="calcValBtn" class="primary-green">📊 가치 반영하기</button>
+      <button id="loadDefaultBtn" class="secondary">🔄 기본 목록 불러오기</button>
+      <button id="clearCacheBtn" class="secondary" style="margin-left:auto;">🗑️ 캐시 전체 삭제</button>
+    </div>
+  </div>
 </div>
-
-<div class="stats">
-    총 뽑기 :
-    <span id="totalDraw">0</span>
-</div>
-
-<div id="log"></div>
 
 <script>
-
-const items = [
-
-{name:"실릿 퐁 상자", rate:0.0100},
-  {name:"고급 제련 보장권 봉투", rate:0.0500},
-  {name:"머메이드 헤드폰(글로벌 쿨타임)", rate:0.0500},
-  {name:"머메이드 헤드폰(변동 캐스팅)", rate:0.0500},
-  {name:"머메이드 헤드폰(MAXHP)", rate:0.0500},
-  {name:"에메랄드 로즈(명중)", rate:0.0300},
-  {name:"에메랄드 로즈(치명)", rate:0.0300},
-  {name:"에메랄드 로즈(마법)", rate:0.0300},
-  {name:"에메랄드 로즈(체력)", rate:0.0300},
-  {name:"스칼렛 스타더스트 크라운", rate:0.0500},
-  {name:"투사의 망토", rate:0.0500},
-  {name:"챔피언의 망토", rate:0.0500},
-  {name:"투사의 부츠", rate:0.0500},
-  {name:"챔피언의 부츠", rate:0.0500},
-  {name:"바이올렛 스타더스트 크라운", rate:0.0500},
-  {name:"대학자의 머플러", rate:0.0500},
-  {name:"마도사의 망토", rate:0.0500},
-  {name:"대학자의 슈즈", rate:0.0500},
-  {name:"마도사의 슈즈", rate:0.0500},
-  {name:"실버 스타더스트 크라운", rate:0.0500},
-  {name:"처형인의 망토", rate:0.0500},
-  {name:"샤프슈터 머플러", rate:0.0500},
-  {name:"처형인의 슈즈", rate:0.0500},
-  {name:"샤프슈터 부츠", rate:0.0500},
-  {name:"인챈트 티켓30", rate:0.0900},
-  {name:"강력한 영혼의 정수", rate:0.0900},
-  {name:"강력한 차원의 정수", rate:0.0900},
-  {name:"봉인된 보스 카드첩", rate:0.0900},
-  {name:"영혼의 뚫어뻥", rate:0.2000},
-  {name:"해피 벌룬", rate:0.1000},
-  {name:"포링 선글래스+", rate:0.1000},
-  {name:"포링 캡슐", rate:0.1000},
-  {name:"[A] 매드바니-LT", rate:0.0200},
-  {name:"매드바니-LT", rate:0.1000},
-  {name:"장교의 모자-LT", rate:0.1000},
-  {name:"EXP 어드바이저", rate:0.1000},
-  {name:"미니 선풍기 상자", rate:0.1000},
-  {name:"다크 스피릿 웨폰 쉐도우", rate:0.1500},
-  {name:"다크 스피릿 쉴드 쉐도우", rate:0.1500},
-  {name:"매직 다크 스피릿 웨폰 쉐도우", rate:0.1500},
-  {name:"매직 다크 스피릿 쉴드 쉐도우", rate:0.1500},
-  {name:"[A] 천공의 룬 크라운(어비스 체이서)", rate:0.0200},
-  {name:"[A] 천공의 룬 크라운(카디날)", rate:0.0200},
-  {name:"[A] 천공의 룬 크라운(인퀴지터)", rate:0.0200},
-  {name:"[A] 천공의 룬 크라운(윈드호크)", rate:0.0200},
-  {name:"[A] 천공의 룬 크라운(바이올로)", rate:0.0200},
-  {name:"[A] 천공의 룬 크라운(엘레멘탈 마스터)", rate:0.0200},
-  {name:"[A] 천공의 룬 크라운(영도사)", rate:0.0200},
-  {name:"[A] 천공의 룬 크라운(알리테아)", rate:0.0200},
-  {name:"[A] 천공의 룬 크라운(하이퍼 노비스)", rate:0.0200},
-  {name:"[A] 천공의 룬 크라운(혼령사)", rate:0.0200},
-  {name:"[A] 천공의 룬 크라운(드래곤 나이트)", rate:0.0200},
-  {name:"[A] 천공의 룬 크라운(임페리얼 가드)", rate:0.0200},
-  {name:"[A] 천공의 룬 크라운(마이스터)", rate:0.0200},
-  {name:"[A] 천공의 룬 크라운(쉐도우 크로스)", rate:0.0200},
-  {name:"[A] 천공의 룬 크라운(아크 메이지)", rate:0.0200},
-  {name:"[A] 천공의 룬 크라운(트루바두르&트루베르)", rate:0.0200},
-  {name:"[A] 천공의 룬 크라운(신키로&시라누이)", rate:0.0200},
-  {name:"[A] 천공의 룬 크라운(나이트 워치)", rate:0.0200},
-  {name:"[A] 천공의 룬 크라운(천제)", rate:0.0200},
-  {name:"[A] 천공의 체이싱 대거", rate:0.0200},
-  {name:"[A] 천공의 아르비 로드", rate:0.0200},
-  {name:"[A] 천공의 멸", rate:0.0200},
-  {name:"[A] 천공의 크레시브 보우", rate:0.0200},
-  {name:"[A] 천공의 쏜즈 소드", rate:0.0200},
-  {name:"[A] 천공의 엘레멘탈 북", rate:0.0200},
-  {name:"[A] 천공의 서낭 완드", rate:0.0200},
-  {name:"[A] 천공의 글레이셜 홀", rate:0.0200},
-  {name:"[A] 천공의 네이팜 소드", rate:0.0200},
-  {name:"[A] 천공의 철호 폭스테일", rate:0.0200},
-  {name:"[A] 천공의 드래곤 피어스", rate:0.0200},
-  {name:"[A] 천공의 임페리얼 스피어", rate:0.0200},
-  {name:"[A] 천공의 러쉬 액스", rate:0.0200},
-  {name:"[A] 천공의 슬래셔", rate:0.0200},
-  {name:"[A] 천공의 데드 소울", rate:0.0200},
-  {name:"[A] 천공의 노래", rate:0.0200},
-  {name:"[A] 천공의 무도", rate:0.0200},
-  {name:"[A] 천공의 서리 풍마", rate:0.0200},
-  {name:"[A] 천공의 나이트 샷", rate:0.0200},
-  {name:"[A] 천공의 월성서", rate:0.0200},
-  {name:"천공의 무기 제련망치", rate:0.3000},
-  {name:"천공의 크라운 제련망치", rate:0.3000},
-  {name:"익스피리언스 웨폰 쉐도우", rate:0.1000},
-  {name:"익스피리언스 쉴드 쉐도우", rate:0.1000},
-  {name:"세퍼레이트 리로드 쉴드 쉐도우", rate:0.1000},
-  {name:"인피니티 쉴드 쉐도우", rate:0.1000},
-  {name:"인피니티 웨폰 쉐도우", rate:0.1000},
-  {name:"메가 블리츠 웨폰 쉐도우", rate:0.1000},
-  {name:"메가 블리츠 쉴드 쉐도우", rate:0.1000},
-  {name:"올마이티 펜던트 쉐도우", rate:0.1000},
-  {name:"올마이티 이어링 쉐도우", rate:0.1000},
-  {name:"매지컬 마스터 아머 쉐도우", rate:0.1500},
-  {name:"매지컬 마스터 슈즈 쉐도우", rate:0.1500},
-  {name:"매지컬 마스터 이어링 쉐도우", rate:0.1500},
-  {name:"매지컬 마스터 펜던트 쉐도우", rate:0.1500},
-  {name:"스펠 마스터 아머 쉐도우", rate:0.1500},
-  {name:"스펠 마스터 슈즈 쉐도우", rate:0.1500},
-  {name:"스펠 마스터 이어링 쉐도우", rate:0.1500},
-  {name:"스펠 마스터 펜던트 쉐도우", rate:0.1500},
-  {name:"소서리 마스터 아머 쉐도우", rate:0.1500},
-  {name:"소서리 마스터 슈즈 쉐도우", rate:0.1500},
-  {name:"소서리 마스터 이어링 쉐도우", rate:0.1500},
-  {name:"소서리 마스터 펜던트 쉐도우", rate:0.1500},
-  {name:"소드 마스터 아머 쉐도우", rate:0.1500},
-  {name:"소드 마스터 슈즈 쉐도우", rate:0.1500},
-  {name:"소드 마스터 이어링 쉐도우", rate:0.1500},
-  {name:"소드 마스터 펜던트 쉐도우", rate:0.1500},
-  {name:"보우 마스터 아머 쉐도우", rate:0.1500},
-  {name:"보우 마스터 슈즈 쉐도우", rate:0.1500},
-  {name:"보우 마스터 이어링 쉐도우", rate:0.1500},
-  {name:"보우 마스터 펜던트 쉐도우", rate:0.1500},
-  {name:"페이탈 마스터 아머 쉐도우", rate:0.1500},
-  {name:"페이탈 마스터 슈즈 쉐도우", rate:0.1500},
-  {name:"페이탈 마스터 이어링 쉐도우", rate:0.1500},
-  {name:"페이탈 마스터 펜던트 쉐도우", rate:0.1500},
-  {name:"마이티 스톰프 이어링 쉐도우", rate:0.2000},
-  {name:"마이티 스톰프 펜던트 쉐도우", rate:0.2000},
-  {name:"파워풀 러쉬 아머 쉐도우", rate:0.2000},
-  {name:"파워풀 러쉬 슈즈 쉐도우", rate:0.2000},
-  {name:"트리플 이어링 쉐도우", rate:0.2000},
-  {name:"트리플 펜던트 쉐도우", rate:0.2000},
-  {name:"스파크 캐노네이드 아머 쉐도우", rate:0.2000},
-  {name:"스파크 캐노네이드 슈즈 쉐도우", rate:0.2000},
-  {name:"이터널 크로스 이어링 쉐도우", rate:0.2000},
-  {name:"이터널 크로스 펜던트 쉐도우", rate:0.2000},
-  {name:"세비지 아머 쉐도우", rate:0.2000},
-  {name:"세비지 슈즈 쉐도우", rate:0.2000},
-  {name:"크레이터 이어링 쉐도우", rate:0.2000},
-  {name:"크레이터 펜던트 쉐도우", rate:0.2000},
-  {name:"스탭 아머 쉐도우", rate:0.2000},
-  {name:"스탭 슈즈 쉐도우", rate:0.2000},
-  {name:"백현부 이어링 쉐도우", rate:0.2000},
-  {name:"백현부 펜던트 쉐도우", rate:0.2000},
-  {name:"사방신 아머 쉐도우", rate:0.2000},
-  {name:"사방신 슈즈 쉐도우", rate:0.2000},
-  {name:"주청부 이어링 쉐도우", rate:0.2000},
-  {name:"주청부 펜던트 쉐도우", rate:0.2000},
-  {name:"사령정화 아머 쉐도우", rate:0.2000},
-  {name:"사령정화 슈즈 쉐도우", rate:0.2000},
-  {name:"철호 할퀴기 이어링 쉐도우", rate:0.2000},
-  {name:"철호 할퀴기 펜던트 쉐도우", rate:0.2000},
-  {name:"호고공 난무 아머 쉐도우", rate:0.2000},
-  {name:"호고공 난무 슈즈 쉐도우", rate:0.2000},
-  {name:"현록포 이어링 쉐도우", rate:0.2000},
-  {name:"현록포 펜던트 쉐도우", rate:0.2000},
-  {name:"잎새영력 아머 쉐도우", rate:0.2000},
-  {name:"잎새영력 슈즈 쉐도우", rate:0.2000},
-  {name:"마스터 웨폰 쉐도우", rate:0.2000},
-  {name:"마스터 쉴드 쉐도우", rate:0.2000},
-  {name:"대장장이의 축복 3개 상자", rate:0.3000},
-  {name:"홀그렌의 쉐도우 제련망치 3개 상자", rate:0.3000},
-  {name:"쉐도우 에센스 3개 상자", rate:0.3000},
-  {name:"무한 거대한 파리의 날개 1시간 상자", rate:0.3000},
-  {name:"인챈트 티켓", rate:0.3000},
-  {name:"제련 보장권 봉투", rate:0.8000},
-  {name:"M.아머 쉐도우 상자", rate:1.0000},
-  {name:"M.슈즈 쉐도우 상자", rate:1.0000},
-  {name:"M.펜던트 쉐도우 상자", rate:1.0000},
-  {name:"M.이어링 쉐도우 상자", rate:1.0000},
-  {name:"특별한 쉐도우 마법서 상자", rate:4.2800},
-  {name:"대장장이의 축복", rate:4.2600},
-  {name:"쉐도우 에센스", rate:4.2600},
-  {name:"홀그렌의 쉐도우 제련망치", rate:4.2600},
-  {name:"올 쉐도우 큐브", rate:3.0000},
-  {name:"쉐도우 마법서 선택상자", rate:3.0000},
-  {name:"무한 파리의 날개 5일상자", rate:5.0000},
-  {name:"스테이터스 감소 포션 선택 상자", rate:5.0000},
-  {name:"바이올로 선택 상자", rate:5.0000},
-  {name:"마이스터 선택 상자", rate:5.0000},
-  {name:"독약병 상자", rate:5.0000},
-  {name:"무한 고양이손 티켓 7일상자", rate:5.0000},
-  {name:"알케미스트 선택 상자", rate:5.0000},
-  {name:"신비한 메달 저금통", rate:5.0000},
-  {name:"오염된 마력", rate:5.0000},
-  {name:"골든 다이아몬드 상자", rate:5.0000},
-  {name:"월드 이동권", rate:5.0000}
+// 가격(price) 속성이 추가된 기본 데이터 항목
+const DEFAULT_LIST = [
+  {name: "실릿 퐁 상자", qty: 1, rate: 0.0100, price: 255000000},
+  {name: "고급 제련 보장권 봉투", qty: 1, rate: 0.0500, price: 144000000},
+  {name: "머메이드 헤드폰(글로벌 쿨타임)", qty: 1, rate: 0.0500, price: 240000000},
+  {name: "머메이드 헤드폰(변동 캐스팅)", qty: 1, rate: 0.0500, price: 55000000},
+  {name: "머메이드 헤드폰(MAXHP)", qty: 1, rate: 0.0500, price: 66666666},
+  {name: "에메랄드 로즈(명중)", qty: 1, rate: 0.0300, price: 20000000},
+  {name: "에메랄드 로즈(치명)", qty: 1, rate: 0.0300, price: 15000000},
+  {name: "에메랄드 로즈(마법)", qty: 1, rate: 0.0300, price: 6000000},
+  {name: "에메랄드 로즈(체력)", qty: 1, rate: 0.0300, price: 10500000},
+  {name: "스칼렛 스타더스트 크라운", qty: 1, rate: 0.0500, price: 1289000},
+  {name: "투사의 망토", qty: 1, rate: 0.0500, price: 8500000},
+  {name: "챔피언의 망토", qty: 1, rate: 0.0500, price: 390000},
+  {name: "투사의 부츠", qty: 1, rate: 0.0500, price: 53000000},
+  {name: "챔피언의 부츠", qty: 1, rate: 0.0500, price: 7500000},
+  {name: "바이올렛 스타더스트 크라운", qty: 1, rate: 0.0500, price: 1000000},
+  {name: "대학자의 머플러", qty: 1, rate: 0.0500, price: 400000},
+  {name: "마도사의 망토", qty: 1, rate: 0.0500, price: 4000000},
+  {name: "대학자의 슈즈", qty: 1, rate: 0.0500, price: 5000000},
+  {name: "마도사의 슈즈", qty: 1, rate: 0.0500, price: 9999999},
+  {name: "실버 스타더스트 크라운", qty: 1, rate: 0.0500, price: 1900000},
+  {name: "처형인의 망토", qty: 1, rate: 0.0500, price: 700000},
+  {name: "샤프슈터 머플러", qty: 1, rate: 0.0500, price: 2550000},
+  {name: "처형인의 슈즈", qty: 1, rate: 0.0500, price: 3500000},
+  {name: "샤프슈터 부츠", qty: 1, rate: 0.0500, price: 3000000},
+  {name: "인챈트 티켓", qty: 3, rate: 0.0900, price: 24890000},
+  {name: "강력한 영혼의 정수", qty: 1, rate: 0.0900, price: 34500000},
+  {name: "강력한 차원의 정수", qty: 1, rate: 0.0900, price: 8450000},
+  {name: "봉인된 보스 카드첩", qty: 1, rate: 0.0900, price: 92000000},
+  {name: "영혼의 뚫어뻥", qty: 1, rate: 0.2000, price: 13000000},
+  {name: "해피 벌룬", qty: 1, rate: 0.1000, price: 109876543},
+  {name: "포링 선글래스+", qty: 1, rate: 0.1000, price: 99000000},
+  {name: "포링 캡슐", qty: 1, rate: 0.1000, price: 20000000},
+  {name: "[A] 매드바니-LT", qty: 1, rate: 0.0200, price: 150000000},
+  {name: "매드바니-LT", qty: 1, rate: 0.1000, price: 7800000},
+  {name: "장교의 모자-LT", qty: 1, rate: 0.1000, price: 12000000},
+  {name: "EXP 어드바이저", qty: 1, rate: 0.1000, price: 7500000},
+  {name: "미니 선풍기 상자", qty: 1, rate: 0.1000, price: 83000000},
+  {name: "다크 스피릿 웨폰 쉐도우", qty: 1, rate: 0.1500, price: 4500000},
+  {name: "다크 스피릿 쉴드 쉐도우", qty: 1, rate: 0.1500, price: 4500000},
+  {name: "매직 다크 스피릿 웨폰 쉐도우", qty: 1, rate: 0.1500, price: 4000000},
+  {name: "매직 다크 스피릿 쉴드 쉐도우", qty: 1, rate: 0.1500, price: 1200000},
+  {name: "[A] 천공의 룬 크라운(어비스 체이서)", qty: 1, rate: 0.0200, price: 600000000},
+  {name: "[A] 천공의 룬 크라운(카디날)", qty: 1, rate: 0.0200, price: 40000000},
+  {name: "[A] 천공의 룬 크라운(인퀴지터)", qty: 1, rate: 0.0200, price: 39900000},
+  {name: "[A] 천공의 룬 크라운(윈드호크)", qty: 1, rate: 0.0200, price: 90000000},
+  {name: "[A] 천공의 룬 크라운(바이올로)", qty: 1, rate: 0.0200, price: 79999999},
+  {name: "[A] 천공의 룬 크라운(엘레멘탈 마스터)", qty: 1, rate: 0.0200, price: 21000000},
+  {name: "[A] 천공의 룬 크라운(영도사)", qty: 1, rate: 0.0200, price: 13000000},
+  {name: "[A] 천공의 룬 크라운(알리테아)", qty: 1, rate: 0.0200, price: 30000000},
+  {name: "[A] 천공의 룬 크라운(하이퍼 노비스)", qty: 1, rate: 0.0200, price: 140000000},
+  {name: "[A] 천공의 룬 크라운(혼령사)", qty: 1, rate: 0.0200, price: 20000000},
+  {name: "[A] 천공의 룬 크라운(드래곤 나이트)", qty: 1, rate: 0.0200, price: 120000000},
+  {name: "[A] 천공의 룬 크라운(임페리얼 가드)", qty: 1, rate: 0.0200, price: 37000000},
+  {name: "[A] 천공의 룬 크라운(마이스터)", qty: 1, rate: 0.0200, price: 70000000},
+  {name: "[A] 천공의 룬 크라운(쉐도우 크로스)", qty: 1, rate: 0.0200, price: 165500000},
+  {name: "[A] 천공의 룬 크라운(아크 메이지)", qty: 1, rate: 0.0200, price: 14000000},
+  {name: "[A] 천공의 룬 크라운(트루바두르&트루베르)", qty: 1, rate: 0.0200, price: 31000000},
+  {name: "[A] 천공의 룬 크라운(신키로&시라누이)", qty: 1, rate: 0.0200, price: 49999999},
+  {name: "[A] 천공의 룬 크라운(나이트 워치)", qty: 1, rate: 0.0200, price: 14500000},
+  {name: "[A] 천공의 룬 크라운(천제)", qty: 1, rate: 0.0200, price: 85000000},
+  {name: "[A] 천공의 체이싱 대거", qty: 1, rate: 0.0200, price: 540000000},
+  {name: "[A] 천공의 아르비 로드", qty: 1, rate: 0.0200, price: 32000000},
+  {name: "[A] 천공의 멸", qty: 1, rate: 0.0200, price: 22000000},
+  {name: "[A] 천공의 크레시브 보우", qty: 1, rate: 0.0200, price: 30000000},
+  {name: "[A] 천공의 쏜즈 소드", qty: 1, rate: 0.0200, price: 42000000},
+  {name: "[A] 천공의 엘레멘탈 북", qty: 1, rate: 0.0200, price: 14500000},
+  {name: "[A] 천공의 서낭 완드", qty: 1, rate: 0.0200, price: 13000000},
+  {name: "[A] 천공의 글레이셜 홀", qty: 1, rate: 0.0200, price: 11000000},
+  {name: "[A] 천공의 네이팜 소드", qty: 1, rate: 0.0200, price: 20000000},
+  {name: "[A] 천공의 철호 폭스테일", qty: 1, rate: 0.0200, price: 19000000},
+  {name: "[A] 천공의 드래곤 피어스", qty: 1, rate: 0.0200, price: 160000000},
+  {name: "[A] 천공의 임페리얼 스피어", qty: 1, rate: 0.0200, price: 50000000},
+  {name: "[A] 천공의 러쉬 액스", qty: 1, rate: 0.0200, price: 179000000},
+  {name: "[A] 천공의 슬래셔", qty: 1, rate: 0.0200, price: 158000000},
+  {name: "[A] 천공의 데드 소울", qty: 1, rate: 0.0200, price: 16000000},
+  {name: "[A] 천공의 노래", qty: 1, rate: 0.0200, price: 17000000},
+  {name: "[A] 천공의 무도", qty: 1, rate: 0.0200, price: 25000000},
+  {name: "[A] 천공의 서리 풍마", qty: 1, rate: 0.0200, price: 30000000},
+  {name: "[A] 천공의 나이트 샷", qty: 1, rate: 0.0200, price: 15000000},
+  {name: "[A] 천공의 월성서", qty: 1, rate: 0.0200, price: 59999999},
+  {name: "천공의 무기 제련망치", qty: 1, rate: 0.3000, price: 25000000},
+  {name: "천공의 크라운 제련망치", qty: 1, rate: 0.3000, price: 24995000},
+  {name: "익스피리언스 웨폰 쉐도우", qty: 1, rate: 0.1000, price: 69000000},
+  {name: "익스피리언스 쉴드 쉐도우", qty: 1, rate: 0.1000, price: 70000000},
+  {name: "세퍼레이트 리로드 쉴드 쉐도우", qty: 1, rate: 0.1000, price: 39000000},
+  {name: "인피니티 쉴드 쉐도우", qty: 1, rate: 0.1000, price: 13000000},
+  {name: "인피니티 웨폰 쉐도우", qty: 1, rate: 0.1000, price: 38000000},
+  {name: "메가 블리츠 웨폰 쉐도우", qty: 1, rate: 0.1000, price: 9000000},
+  {name: "메가 블리츠 쉴드 쉐도우", qty: 1, rate: 0.1000, price: 4999999},
+  {name: "올마이티 펜던트 쉐도우", qty: 1, rate: 0.1000, price: 7000000},
+  {name: "올마이티 이어링 쉐도우", qty: 1, rate: 0.1000, price: 7000000},
+  {name: "매지컬 마스터 아머 쉐도우", qty: 1, rate: 0.1500, price: 5000000},
+  {name: "매지컬 마스터 슈즈 쉐도우", qty: 1, rate: 0.1500, price: 5000000},
+  {name: "매지컬 마스터 이어링 쉐도우", qty: 1, rate: 0.1500, price: 4500000},
+  {name: "매지컬 마스터 펜던트 쉐도우", qty: 1, rate: 0.1500, price: 7900000},
+  {name: "스펠 마스터 아머 쉐도우", qty: 1, rate: 0.1500, price: 7000000},
+  {name: "스펠 마스터 슈즈 쉐도우", qty: 1, rate: 0.1500, price: 7000000},
+  {name: "스펠 마스터 이어링 쉐도우", qty: 1, rate: 0.1500, price: 2350000},
+  {name: "스펠 마스터 펜던트 쉐도우", qty: 1, rate: 0.1500, price: 2000000},
+  {name: "소서리 마스터 아머 쉐도우", qty: 1, rate: 0.1500, price: 7000000},
+  {name: "소서리 마스터 슈즈 쉐도우", qty: 1, rate: 0.1500, price: 9000000},
+  {name: "소서리 마스터 이어링 쉐도우", qty: 1, rate: 0.1500, price: 7800000},
+  {name: "소서리 마스터 펜던트 쉐도우", qty: 1, rate: 0.1500, price: 3000000},
+  {name: "소드 마스터 아머 쉐도우", qty: 1, rate: 0.1500, price: 27000000},
+  {name: "소드 마스터 슈즈 쉐도우", qty: 1, rate: 0.1500, price: 20000000},
+  {name: "소드 마스터 이어링 쉐도우", qty: 1, rate: 0.1500, price: 10000000},
+  {name: "소드 마스터 펜던트 쉐도우", qty: 1, rate: 0.1500, price: 12500000},
+  {name: "보우 마스터 아머 쉐도우", qty: 1, rate: 0.1500, price: 2900000},
+  {name: "보우 마스터 슈즈 쉐도우", qty: 1, rate: 0.1500, price: 4200000},
+  {name: "보우 마스터 이어링 쉐도우", qty: 1, rate: 0.1500, price: 6900000},
+  {name: "보우 마스터 펜던트 쉐도우", qty: 1, rate: 0.1500, price: 4500000},
+  {name: "페이탈 마스터 아머 쉐도우", qty: 1, rate: 0.1500, price: 500000},
+  {name: "페이탈 마스터 슈즈 쉐도우", qty: 1, rate: 0.1500, price: 300000},
+  {name: "페이탈 마스터 이어링 쉐도우", qty: 1, rate: 0.1500, price: 1000000},
+  {name: "페이탈 마스터 펜던트 쉐도우", qty: 1, rate: 0.1500, price: 1800000},
+  {name: "마이티 스톰프 이어링 쉐도우", qty: 1, rate: 0.2000, price: 30000},
+  {name: "마이티 스톰프 펜던트 쉐도우", qty: 1, rate: 0.2000, price: 200000},
+  {name: "파워풀 러쉬 아머 쉐도우", qty: 1, rate: 0.2000, price: 1500000},
+  {name: "파워풀 러쉬 슈즈 쉐도우", qty: 1, rate: 0.2000, price: 1000000},
+  {name: "트리플 이어링 쉐도우", qty: 1, rate: 0.2000, price: 39000},
+  {name: "트리플 펜던트 쉐도우", qty: 1, rate: 0.2000, price: 19800},
+  {name: "스파크 캐노네이드 아머 쉐도우", qty: 1, rate: 0.2000, price: 800000},
+  {name: "스파크 캐노네이드 슈즈 쉐도우", qty: 1, rate: 0.2000, price: 1600000},
+  {name: "이터널 크로스 이어링 쉐도우", qty: 1, rate: 0.2000, price: 1200000},
+  {name: "이터널 크로스 펜던트 쉐도우", qty: 1, rate: 0.2000, price: 140000},
+  {name: "세비지 아머 쉐도우", qty: 1, rate: 0.2000, price: 5500000},
+  {name: "세비지 슈즈 쉐도우", qty: 1, rate: 0.2000, price: 5000000},
+  {name: "크레이터 이어링 쉐도우", qty: 1, rate: 0.2000, price: 40000},
+  {name: "크레이터 펜던트 쉐도우", qty: 1, rate: 0.2000, price: 48000},
+  {name: "스탭 아머 쉐도우", qty: 1, rate: 0.2000, price: 33000},
+  {name: "스탭 슈즈 쉐도우", qty: 1, rate: 0.2000, price: 666666},
+  {name: "백현부 이어링 쉐도우", qty: 1, rate: 0.2000, price: 2500000},
+  {name: "백현부 펜던트 쉐도우", qty: 1, rate: 0.2000, price: 3500000},
+  {name: "사방신 아머 쉐도우", qty: 1, rate: 0.2000, price: 200000},
+  {name: "사방신 슈즈 쉐도우", qty: 1, rate: 0.2000, price: 800000},
+  {name: "주청부 이어링 쉐도우", qty: 1, rate: 0.2000, price: 400000},
+  {name: "주청부 펜던트 쉐도우", qty: 1, rate: 0.2000, price: 800000},
+  {name: "사령정화 아머 쉐도우", qty: 1, rate: 0.2000, price: 77000},
+  {name: "사령정화 슈즈 쉐도우", qty: 1, rate: 0.2000, price: 40000},
+  {name: "철호 할퀴기 이어링 쉐도우", qty: 1, rate: 0.2000, price: 70000},
+  {name: "철호 할퀴기 펜던트 쉐도우", qty: 1, rate: 0.2000, price: 50000},
+  {name: "호고공 난무 아머 쉐도우", qty: 1, rate: 0.2000, price: 40000},
+  {name: "호고공 난무 슈즈 쉐도우", qty: 1, rate: 0.2000, price: 77777},
+  {name: "현록포 이어링 쉐도우", qty: 1, rate: 0.2000, price: 150000},
+  {name: "현록포 펜던트 쉐도우", qty: 1, rate: 0.2000, price: 489000},
+  {name: "잎새영력 아머 쉐도우", qty: 1, rate: 0.2000, price: 490000},
+  {name: "잎새영력 슈즈 쉐도우", qty: 1, rate: 0.2000, price: 70000},
+  {name: "마스터 웨폰 쉐도우", qty: 1, rate: 0.2000, price: 14000000},
+  {name: "마스터 쉴드 쉐도우", qty: 1, rate: 0.2000, price: 11400000},
+  {name: "대장장이의 축복 3개 상자", qty: 1, rate: 0.3000, price: 24150000},
+  {name: "홀그렌의 쉐도우 제련망치 3개 상자", qty: 1, rate: 0.3000, price: 9990000},
+  {name: "쉐도우 에센스 3개 상자", qty: 1, rate: 0.3000, price: 10950000},
+  {name: "무한 거대한 파리의 날개 1시간 상자", qty: 1, rate: 0.3000, price: 2200000},
+  {name: "인챈트 티켓", qty: 1, rate: 0.3000, price: 24890000},
+  {name: "제련 보장권 봉투", qty: 1, rate: 0.8000, price: 8000000},
+  {name: "M.아머 쉐도우 상자", qty: 1, rate: 1.0000, price: 100000},
+  {name: "M.슈즈 쉐도우 상자", qty: 1, rate: 1.0000, price: 100000},
+  {name: "M.펜던트 쉐도우 상자", qty: 1, rate: 1.0000, price: 100000},
+  {name: "M.이어링 쉐도우 상자", qty: 1, rate: 1.0000, price: 270000},
+  {name: "특별한 쉐도우 마법서 상자", qty: 1, rate: 4.2800, price: 2200000},
+  {name: "대장장이의 축복", qty: 1, rate: 4.2600, price: 8050000},
+  {name: "쉐도우 에센스", qty: 1, rate: 4.2600, price: 3650000},
+  {name: "홀그렌의 쉐도우 제련망치", qty: 1, rate: 4.2600, price: 3330000},
+  {name: "올 쉐도우 큐브", qty: 1, rate: 3.0000, price: 2530000},
+  {name: "쉐도우 마법서 선택상자", qty: 1, rate: 3.0000, price: 120000},
+  {name: "무한 파리의 날개 5일상자", qty: 1, rate: 5.0000, price: 177755},
+  {name: "스테이터스 감소 포션 선택 상자", qty: 1, rate: 5.0000, price: 100000},
+  {name: "바이올로 선택 상자", qty: 1, rate: 5.0000, price: 18900},
+  {name: "마이스터 선택 상자", qty: 1, rate: 5.0000, price: 40000},
+  {name: "독약병 상자", qty: 1, rate: 5.0000, price: 1129990},
+  {name: "무한 고양이손 티켓 7일상자", qty: 1, rate: 5.0000, price: 450000},
+  {name: "알케미스트 선택 상자", qty: 1, rate: 5.0000, price: 49000},
+  {name: "신비한 메달 저금통", qty: 1, rate: 5.0000, price: 950000},
+  {name: "오염된 마력", qty: 2, rate: 5.0000, price: 215000},
+  {name: "골든 다이아몬드 상자", qty: 1, rate: 5.0000, price: 1000000},
+  {name: "월드 이동권", qty: 5, rate: 5.0000, price: 11990},
 ];
 
-const totalRate =
-items.reduce((a,b)=>a+b.rate,0);
+const $ = id => document.getElementById(id);
+const fmt = n => n == null ? "-" : Number(n).toLocaleString("ko-KR");
 
-const inventory = {};
+let simResults = new Map();  // 시뮬레이터: 이름 -> 수량
+let realResults = new Map(); // 실제 입력: 이름 -> 수량
+let priceMap = new Map();    // 이름 -> 단가
+let totalSimCount = 0;
 
-let totalDraw = 0;
+let totalWeight = 0;
+const cumulativeList = DEFAULT_LIST.map(item => {
+  totalWeight += item.rate;
+  return { ...item, cumRate: totalWeight };
+});
 
-function getRandomItem(){
+function getRateClass(rate) {
+  if (rate < 0.1) return "rate-ur";
+  if (rate < 0.5) return "rate-r";
+  if (rate < 3.0) return "rate-uc";
+  return "rate-c";
+}
 
-    let rand = Math.random() * totalRate;
+// ---------------- 1. 시뮬레이터 로직 ----------------
+function drawOne() {
+  const rand = Math.random() * totalWeight;
+  const found = cumulativeList.find(it => rand <= it.cumRate) || cumulativeList[cumulativeList.length - 1];
+  const currentQty = simResults.get(found.name) || 0;
+  simResults.set(found.name, currentQty + found.qty);
+  totalSimCount++;
+}
 
-    let sum = 0;
+function simulate(count) {
+  for(let i=0; i<count; i++) drawOne();
+  $("totalSimCount").textContent = fmt(totalSimCount);
+  calculateAndRender();
+  saveCache();
+}
 
-    for(const item of items){
+// ---------------- 2. 시세 파싱 ----------------
+function parsePriceText(text) {
+  priceMap.clear();
 
-        sum += item.rate;
-
-        if(rand <= sum){
-            return item;
-        }
+  // 기본 목록에 price 값이 포함되어 있다면 초기화 값으로 세팅
+  DEFAULT_LIST.forEach(item => {
+    if(item.price !== null && item.price !== undefined) {
+      priceMap.set(item.name, item.price);
     }
+  });
 
-    return items[0];
-}
+  if(!text) return;
+  const lines = text.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
 
-function getClass(rate){
+  lines.forEach(line => {
+    let cells = line.split(/\t|\|/).map(x => x.trim()).filter(Boolean);
+    if(cells.length < 2) return;
 
-    if(rate <= 0.01) return "ultra";
-    if(rate < 0.1) return "legend";
-    if(rate < 1) return "rare";
+    const name = cells[0].replace(/<[^>]*>/g, "").trim();
+    const lastCell = cells[cells.length - 1];
+    const priceMatch = lastCell.replace(/,/g, "").match(/(\d+)\s*(?:Zeny|Z)?/i);
 
-    return "common";
-}
-
-function draw(times){
-
-    for(let i=0;i<times;i++){
-
-        const item = getRandomItem();
-
-        totalDraw++;
-
-        if(!inventory[item.name]){
-
-            inventory[item.name] = {
-                count:0,
-                rate:item.rate
-            };
-        }
-
-        inventory[item.name].count++;
+    if(name && priceMatch) {
+      const price = Number(priceMatch[1]);
+      if(!isNaN(price)) priceMap.set(name, price);
     }
-
-    render();
+  });
 }
 
-function render(){
+// 기본 목록 텍스트 영역에 자동 채우기
+function loadDefaultListText() {
+  const textLines = DEFAULT_LIST.map(item => {
+    const priceVal = item.price != null ? item.price : 0;
+    return `${item.name}\t${priceVal}`;
+  });
+  $("priceInput").value = textLines.join("\n");
+  calculateAndRender();
+  saveCache();
+}
 
-    const log = document.getElementById("log");
+// ---------------- 3. 렌더링 및 계산 ----------------
+function renderSimGrid() {
+  const container = $("gridContainer");
+  container.innerHTML = "";
 
-    log.innerHTML = "";
+  if(simResults.size === 0) {
+    container.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding:30px; color:#8c8c8c; font-size:13px;">뽑기 버튼을 누르면 목록이 표시됩니다.</div>`;
+    return;
+  }
 
-    const sorted =
-    Object.entries(inventory)
-    .sort((a,b)=>{
+  let sorted = [...simResults.entries()].sort((a,b) => {
+    const rateA = (DEFAULT_LIST.find(i => i.name === a[0]) || {}).rate || 0;
+    const rateB = (DEFAULT_LIST.find(i => i.name === b[0]) || {}).rate || 0;
+    return rateA - rateB;
+  });
 
-        if(a[1].rate === b[1].rate){
-            return b[1].count - a[1].count;
-        }
+  sorted.forEach(([name, qty]) => {
+    const itemData = DEFAULT_LIST.find(i => i.name === name) || { rate: 0 };
+    const rateClass = getRateClass(itemData.rate);
+    const unitPrice = priceMap.get(name);
+    const sumPrice = unitPrice != null ? unitPrice * qty : null;
 
-        return a[1].rate - b[1].rate;
-    });
+    const card = document.createElement("div");
+    card.className = `item-card ${rateClass}`;
+    
+    let priceTextHtml = unitPrice != null 
+      ? `${fmt(unitPrice)} Z<br><b style="color:#087f3f;">${fmt(sumPrice)} Z</b>` 
+      : `<span style="color:#b0b0b0;">-</span>`;
 
-    for(const [name,data] of sorted){
+    card.innerHTML = `
+      <div class="item-top">
+        <span class="item-name">${escapeHtml(name)}</span>
+        <span class="badge">${itemData.rate}%</span>
+      </div>
+      <div class="item-bottom">
+        <div class="item-price-info">${priceTextHtml}</div>
+        <div class="item-qty">${fmt(qty)}개</div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
 
-        const div = document.createElement("div");
+function renderRealList() {
+  const container = $("realListContainer");
+  const keyword = $("realSearch").value.trim().toLowerCase();
+  container.innerHTML = "";
 
-        div.className =
-        `item ${getClass(data.rate)}`;
+  // 확률 낮은 순 정렬
+  const sortedList = [...DEFAULT_LIST].sort((a,b) => a.rate - b.rate);
 
-        div.innerHTML =
-        `${name} <span class="count">x${data.count}</span>`;
+  sortedList.forEach(item => {
+    if (keyword && !item.name.toLowerCase().includes(keyword)) return;
 
-        log.appendChild(div);
+    const qty = realResults.get(item.name) || 0;
+    const unitPrice = priceMap.get(item.name);
+    const sumPrice = unitPrice != null ? unitPrice * qty : null;
+
+    let priceHtml = unitPrice != null 
+      ? `${fmt(unitPrice)} Z ${qty > 0 ? `| <b style="color:#087f3f;">${fmt(sumPrice)} Z</b>` : ''}` 
+      : `시세 미입력`;
+
+    const row = document.createElement("div");
+    row.className = "real-item-row";
+    row.innerHTML = `
+      <div class="real-item-info">
+        <div class="real-item-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)} <span style="font-weight:normal; font-size:10px; color:#888;">(${item.rate}%)</span></div>
+        <div class="real-item-price">${priceHtml}</div>
+      </div>
+      <div class="qty-control">
+        <button class="btn-qty" onclick="changeRealQty('${escapeHtml(item.name)}', -1)">-</button>
+        <input type="number" class="input-qty" value="${qty}" min="0" onchange="setRealQty('${escapeHtml(item.name)}', this.value)">
+        <button class="btn-qty" onclick="changeRealQty('${escapeHtml(item.name)}', 1)">+</button>
+      </div>
+    `;
+    container.appendChild(row);
+  });
+}
+
+function changeRealQty(name, delta) {
+  const current = realResults.get(name) || 0;
+  const next = Math.max(0, current + delta);
+  if (next === 0) realResults.delete(name);
+  else realResults.set(name, next);
+  calculateAndRender();
+  saveCache();
+}
+
+function setRealQty(name, val) {
+  const num = Math.max(0, parseInt(val, 10) || 0);
+  if (num === 0) realResults.delete(name);
+  else realResults.set(name, num);
+  calculateAndRender();
+  saveCache();
+}
+
+function calculateAndRender() {
+  const priceText = $("priceInput").value.trim();
+  parsePriceText(priceText);
+
+  // 1회당 기대값 계산
+  let singleExpectedValue = 0;
+  DEFAULT_LIST.forEach(item => {
+    const unitPrice = priceMap.get(item.name);
+    if(unitPrice != null) {
+      singleExpectedValue += (item.rate / 100) * item.qty * unitPrice;
     }
+  });
 
-    document.getElementById("totalDraw").textContent =
-    totalDraw.toLocaleString();
+  // A. 시뮬레이터 합계 & 기대값
+  let simTotalVal = 0;
+  simResults.forEach((qty, name) => {
+    const unitPrice = priceMap.get(name);
+    if(unitPrice != null) simTotalVal += unitPrice * qty;
+  });
+  $("totalPulledValue").textContent = fmt(simTotalVal) + " Zeny";
+
+  const simTotalExpVal = Math.round(singleExpectedValue * totalSimCount);
+  const simDiff = simTotalVal - simTotalExpVal;
+  if (totalSimCount > 0 && singleExpectedValue > 0) {
+    const diffFmt = (simDiff >= 0 ? "+" : "") + fmt(simDiff);
+    const color = simDiff >= 0 ? "#087f3f" : "#d91e1e";
+    $("expectedValCompare").innerHTML = `기대값: ${fmt(simTotalExpVal)} Z (1회 당 ${fmt(Math.round(singleExpectedValue))} Z) <span style="color:${color}; font-weight:bold;">[${diffFmt} Z]</span>`;
+  } else {
+    $("expectedValCompare").innerHTML = `기대값: - Z (1회 당 ${singleExpectedValue > 0 ? fmt(Math.round(singleExpectedValue)) : "-"} Z)`;
+  }
+
+  // B. 실제 입력 합계 & 기대값
+  let realTotalVal = 0;
+  let realTotalQty = 0;
+  realResults.forEach((qty, name) => {
+    realTotalQty += qty;
+    const unitPrice = priceMap.get(name);
+    if(unitPrice != null) realTotalVal += unitPrice * qty;
+  });
+
+  $("realTotalCount").textContent = fmt(realTotalQty);
+  $("realTotalValue").textContent = fmt(realTotalVal) + " Zeny";
+
+  const realTotalExpVal = Math.round(singleExpectedValue * realTotalQty);
+  const realDiff = realTotalVal - realTotalExpVal;
+  if (realTotalQty > 0 && singleExpectedValue > 0) {
+    const diffFmt = (realDiff >= 0 ? "+" : "") + fmt(realDiff);
+    const color = realDiff >= 0 ? "#087f3f" : "#d91e1e";
+    $("realExpectedCompare").innerHTML = `기대값: ${fmt(realTotalExpVal)} Z <span style="color:${color}; font-weight:bold;">[${diffFmt} Z]</span>`;
+  } else {
+    $("realExpectedCompare").innerHTML = `기대값: - Z`;
+  }
+
+  renderSimGrid();
+  renderRealList();
 }
 
-function resetAll(){
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
 
-    totalDraw = 0;
+function saveCache() {
+  localStorage.setItem("kachyua_sim_results", JSON.stringify([...simResults.entries()]));
+  localStorage.setItem("kachyua_real_results", JSON.stringify([...realResults.entries()]));
+  localStorage.setItem("kachyua_sim_count", totalSimCount.toString());
+  localStorage.setItem("kachyua_price_text", $("priceInput").value);
+}
 
-    for(const key in inventory){
-        delete inventory[key];
+function loadCache() {
+  try {
+    const savedSim = localStorage.getItem("kachyua_sim_results");
+    const savedReal = localStorage.getItem("kachyua_real_results");
+    const savedCount = localStorage.getItem("kachyua_sim_count");
+    const savedText = localStorage.getItem("kachyua_price_text");
+
+    if (savedText != null) $("priceInput").value = savedText;
+    if (savedSim != null) simResults = new Map(JSON.parse(savedSim));
+    if (savedReal != null) realResults = new Map(JSON.parse(savedReal));
+    if (savedCount != null) {
+      totalSimCount = Number(savedCount) || 0;
+      $("totalSimCount").textContent = fmt(totalSimCount);
     }
-
-    render();
+  } catch (e) {
+    console.error("캐시 로드 실패:", e);
+  }
 }
 
+// 이벤트 리스너
+$("sim1").addEventListener("click", () => simulate(1));
+$("sim10").addEventListener("click", () => simulate(10));
+$("sim50").addEventListener("click", () => simulate(50));
+$("sim100").addEventListener("click", () => simulate(100));
+$("sim1000").addEventListener("click", () => simulate(1000));
+
+$("resetSim").addEventListener("click", () => {
+  simResults.clear();
+  totalSimCount = 0;
+  $("totalSimCount").textContent = "0";
+  calculateAndRender();
+  saveCache();
+});
+
+$("resetRealBtn").addEventListener("click", () => {
+  if(confirm("실제 입력 수량을 모두 초기화하시겠습니까?")) {
+    realResults.clear();
+    calculateAndRender();
+    saveCache();
+  }
+});
+
+$("realSearch").addEventListener("input", renderRealList);
+
+$("calcValBtn").addEventListener("click", () => {
+  calculateAndRender();
+  saveCache();
+});
+
+$("loadDefaultBtn").addEventListener("click", loadDefaultListText);
+
+$("priceInput").addEventListener("input", () => {
+  calculateAndRender();
+  saveCache();
+});
+
+$("clearCacheBtn").addEventListener("click", () => {
+  if (confirm("저장된 모든 캐시 데이터를 전체 삭제하시겠습니까?")) {
+    localStorage.clear();
+    simResults.clear();
+    realResults.clear();
+    priceMap.clear();
+    totalSimCount = 0;
+    $("priceInput").value = "";
+    $("totalSimCount").textContent = "0";
+    calculateAndRender();
+  }
+});
+
+window.addEventListener("DOMContentLoaded", () => {
+  loadCache();
+  calculateAndRender();
+});
 </script>
-
 </body>
 </html>
