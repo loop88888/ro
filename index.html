@@ -27,8 +27,8 @@ button:hover{opacity:0.9}
 .total-val-main{font-size:15px;font-weight:800;color:#087f3f}
 .total-val-sub{font-size:11px;color:#64748b;margin-top:2px}
 
-/* 5분할 그리드 */
-.grid-container{display:grid;grid-template-columns:repeat(5, 1fr);gap:6px;margin-top:10px;max-height:55vh;overflow-y:auto;padding-right:2px}
+/* 5분할 그리드 (최대 높이 변경: 기존 55vh의 약 4배 수준인 220vh 또는 충분한 높이 확보) */
+.grid-container{display:grid;grid-template-columns:repeat(5, 1fr);gap:6px;margin-top:10px;max-height:220vh;overflow-y:auto;padding-right:2px}
 
 /* 밀집형 카드 (시뮬레이터용) */
 .item-card{border:1px solid #e5e7eb;border-radius:6px;padding:6px 8px;background:#fff;display:flex;flex-direction:column;justify-content:space-between;min-height:62px}
@@ -85,7 +85,6 @@ button:hover{opacity:0.9}
 </head>
 <body>
 <div class="wrap">
-  <!-- 1. 시뮬레이터 카드 -->
   <div class="card">
     <h1>🎰 카츄아 뽑기 시뮬레이터</h1>
     
@@ -95,7 +94,7 @@ button:hover{opacity:0.9}
       <button id="sim50" class="secondary">50회</button>
       <button id="sim100" class="secondary">100회</button>
       <button id="sim1000" class="primary-blue">1,000회</button>
-      <button id="resetSim" class="danger" style="margin-left:auto;">🔄 뽑기 초기화</button>
+      <button id="resetSim" class="danger">초기화</button>
     </div>
 
     <div class="header-summary">
@@ -111,7 +110,6 @@ button:hover{opacity:0.9}
     <div id="gridContainer" class="grid-container"></div>
   </div>
 
-  <!-- 2. 실제 뽑기 결과 직접 입력 카드 -->
   <div class="card">
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
       <h2>📝 실제 뽑기 결과 입력</h2>
@@ -135,7 +133,6 @@ button:hover{opacity:0.9}
     <div id="realListContainer" class="real-list-container"></div>
   </div>
 
-  <!-- 3. 시세 입력 카드 -->
   <div class="card">
     <h2>📋 최저가 데이터 붙여넣기</h2>
     <textarea id="priceInput" placeholder="여기에 최저가가 포함된 텍스트를 붙여넣으세요..."></textarea>
